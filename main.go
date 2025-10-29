@@ -1,14 +1,18 @@
 package main
 
 import (
-	"bytes"
+	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
+	"strings"
 )
 
+const filePath = "messages.txt"
+
 func main() {
-	f, err := os.Open("messages.txt")
+	f, err := os.Open(filePath)
 	if err != nil {
 		log.Fatal("error", "error", err)
 	}
@@ -19,21 +23,25 @@ func main() {
 		data := make([]byte, 8)
 		n, err := f.Read(data)
 		if err != nil {
+			if len(curr_line) != 0 {
+				fmt.Printf("read: %s\n", curr_line)
+				curr_line = ""
+			}
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			fmt.Printf("error: %s\n", err.Error())
 			break
 		}
 
-		data = data[:n]
-		if i := bytes.IndexByte(data, '\n'); i != -1 {
-			curr_line += string(data[:i])
+		str := string(data[:n])
+		parts := strings.Split(str, "\n")
+		for i := 0; i < len(parts)-1; i++ {
+			curr_line += parts[i]
 			fmt.Printf("read: %s\n", curr_line)
-			data = data[i+1:]
 			curr_line = ""
 		}
-
-		curr_line += string(data)
+		curr_line += parts[len(parts)-1]
 	}
 
-	if len(curr_line) != 0 {
-		fmt.Printf("read: %s\n", curr_line)
-	}
 }
